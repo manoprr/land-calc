@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>เครื่องมือคำนวณที่ดิน ไร่–งาน–ตารางวา</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1F4EE;
+    --grid:#D6DED2;
+    --ink:#17251D;
+    --ink-soft:#5C6B60;
+    --seal:#9E2B25;
+    --brass:#8A6A1F;
+    --line:#C3CDBD;
+    --field:#FFFFFF;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size:22px 22px;
+    color:var(--ink);
+    font-family:"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",system-ui,sans-serif;
+    font-size:16px;line-height:1.55;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:20px 16px 56px;}
+
+  header h1{
+    font-family:"Bai Jamjuree","IBM Plex Sans Thai",sans-serif;
+    font-size:1.3rem;font-weight:600;letter-spacing:-.01em;margin:0 0 2px;
+  }
+  header p{margin:0 0 16px;color:var(--ink-soft);font-size:.9rem;}
+
+  /* ---------- แท็บ ---------- */
+  .tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line);}
+  .tab{
+    flex:1;background:transparent;border:0;border-bottom:2px solid transparent;
+    padding:10px 6px;font-family:inherit;font-size:.92rem;font-weight:500;
+    color:var(--ink-soft);cursor:pointer;margin-bottom:-1px;
+  }
+  .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--seal);font-weight:600;}
+  .page[hidden]{display:none;}
+
+  /* ---------- ผลลัพธ์ ---------- */
+  .readout{
+    background:var(--field);border:1px solid var(--line);border-top:3px solid var(--seal);
+    border-radius:var(--radius);padding:18px 16px 14px;box-shadow:0 1px 0 rgba(23,37,29,.06);
+  }
+  .deed{
+    font-family:"Bai Jamjuree",sans-serif;
+    display:flex;align-items:flex-end;justify-content:center;
+    gap:clamp(5px,2.5vw,14px);flex-wrap:nowrap;
+  }
+  .deed .cell{text-align:center;min-width:0;}
+  .deed .num{
+    display:block;font-size:clamp(1.7rem,9vw,2.7rem);font-weight:700;line-height:1.05;
+    letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+  }
+  .deed .unit{display:block;font-size:.76rem;color:var(--ink-soft);margin-top:2px;font-family:"IBM Plex Sans Thai",sans-serif;}
+  .deed .dash{font-size:clamp(1.3rem,6vw,2rem);color:var(--line);padding-bottom:26px;font-weight:500;}
+  .deed .minus{
+    font-size:clamp(1.6rem,8vw,2.4rem);color:var(--seal);padding-bottom:24px;font-weight:700;
+  }
+  .deed .minus[hidden]{display:none;}
+  .m2line{
+    margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);
+    display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  }
+  .m2line strong{font-family:"Bai Jamjuree",sans-serif;font-size:1.3rem;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+  .m2line span{color:var(--ink-soft);font-size:.86rem;white-space:nowrap;}
+  .copy{
+    margin-top:12px;width:100%;background:var(--ink);color:var(--paper);
+    border:0;border-radius:8px;padding:11px;font-family:inherit;font-size:.92rem;font-weight:500;cursor:pointer;
+  }
+  .copy:active{transform:translateY(1px);}
+  .copy.done{background:var(--brass);}
+
+  /* ---------- ช่องกรอก ---------- */
+  .group{margin-top:22px;}
+  .group > h2{font-size:.92rem;font-weight:600;margin:0 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .group > h2 .hint{font-weight:400;color:var(--ink-soft);font-size:.8rem;}
+  .row{display:flex;gap:8px;}
+  .f{flex:1;min-width:0;}
+  label{display:block;font-size:.76rem;color:var(--ink-soft);margin-bottom:4px;}
+  input{
+    width:100%;background:var(--field);color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;padding:12px 10px;
+    font-family:"Bai Jamjuree",sans-serif;font-size:1.1rem;font-weight:600;
+    font-variant-numeric:tabular-nums;text-align:right;
+  }
+  input:focus{outline:2px solid var(--seal);outline-offset:1px;border-color:var(--seal);}
+  .divider{display:flex;align-items:center;gap:10px;margin:20px 0 0;color:var(--ink-soft);font-size:.8rem;}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:22px;}
+  .chip{background:rgba(255,255,255,.65);border:1px solid var(--line);border-radius:8px;padding:9px 11px;}
+  .chip b{display:block;font-family:"Bai Jamjuree",sans-serif;font-size:1rem;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+  .chip span{font-size:.75rem;color:var(--ink-soft);}
+
+  /* ---------- หน้าบวกลบ ---------- */
+  .rowcard{
+    background:var(--field);border:1px solid var(--line);border-radius:var(--radius);
+    padding:10px 10px 8px;margin-bottom:10px;
+  }
+  .rowcard.neg{border-left:3px solid var(--seal);}
+  .rowtop{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
+  .sign{
+    flex:0 0 38px;height:38px;border-radius:8px;border:1px solid var(--line);
+    background:var(--paper);color:var(--ink);
+    font-family:"Bai Jamjuree",sans-serif;font-size:1.3rem;font-weight:700;line-height:1;cursor:pointer;
+  }
+  .sign.neg{background:var(--seal);border-color:var(--seal);color:#fff;}
+  .rowtop .lbl{
+    flex:1;min-width:0;text-align:left;font-family:inherit;font-size:.88rem;font-weight:400;
+    padding:9px 10px;
+  }
+  .mini{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);
+    border-radius:8px;padding:9px 9px;font-family:inherit;font-size:.76rem;cursor:pointer;height:38px;
+  }
+  .del{flex:0 0 34px;height:38px;font-size:1.1rem;line-height:1;padding:0;}
+  .rowfields[hidden]{display:none;}
+  .roweq{margin-top:6px;font-size:.78rem;color:var(--ink-soft);text-align:right;font-variant-numeric:tabular-nums;}
+  .addbtn{
+    width:100%;background:transparent;border:1px dashed var(--line);border-radius:var(--radius);
+    padding:12px;color:var(--ink-soft);font-family:inherit;font-size:.9rem;cursor:pointer;margin-bottom:20px;
+  }
+  .addbtn:hover{border-color:var(--seal);color:var(--ink);}
+
+  details{margin-top:24px;border-top:1px solid var(--line);padding-top:14px;}
+  summary{cursor:pointer;font-size:.9rem;font-weight:500;}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.86rem;}
+  td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:top;}
+  td:last-child{text-align:right;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+  .note{font-size:.82rem;color:var(--ink-soft);margin-top:12px;}
+  .reset{
+    margin-top:14px;width:100%;background:transparent;color:var(--ink-soft);
+    border:1px solid var(--line);border-radius:8px;padding:10px;font-family:inherit;font-size:.88rem;cursor:pointer;
+  }
+  @media (prefers-reduced-motion:no-preference){ .copy{transition:background .18s ease;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>เครื่องมือคำนวณที่ดิน</h1>
+    <p>ไร่ – งาน – ตารางวา สำหรับงานเอกสารและโฉนด</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tabConv" role="tab" aria-selected="true" aria-controls="pageConv">แปลงหน่วย</button>
+    <button class="tab" id="tabCalc" role="tab" aria-selected="false" aria-controls="pageCalc">บวก – ลบ หลายรายการ</button>
+  </div>
+
+  <!-- ============ หน้า 1: แปลงหน่วย ============ -->
+  <section class="page" id="pageConv" role="tabpanel" aria-labelledby="tabConv">
+
+    <div class="readout" aria-live="polite">
+      <div class="deed">
+        <div class="cell"><span class="num" id="oRai">0</span><span class="unit">ไร่</span></div>
+        <div class="dash">–</div>
+        <div class="cell"><span class="num" id="oNgan">0</span><span class="unit">งาน</span></div>
+        <div class="dash">–</div>
+        <div class="cell"><span class="num" id="oWa">0</span><span class="unit">ตารางวา</span></div>
+      </div>
+      <div class="m2line"><strong id="oM2">0</strong><span>ตารางเมตร</span></div>
+      <button class="copy" id="copyBtn">คัดลอกผลลัพธ์</button>
+    </div>
+
+    <div class="group">
+      <h2>กรอกแบบโฉนด <span class="hint">ใส่ทศนิยมได้ทุกช่อง</span></h2>
+      <div class="row">
+        <div class="f"><label for="iRai">ไร่</label><input id="iRai" type="text" inputmode="decimal" value="0"></div>
+        <div class="f"><label for="iNgan">งาน</label><input id="iNgan" type="text" inputmode="decimal" value="0"></div>
+        <div class="f"><label for="iWa">ตารางวา</label><input id="iWa" type="text" inputmode="decimal" value="0"></div>
+      </div>
+    </div>
+
+    <div class="divider">หรือกรอกทางนี้</div>
+
+    <div class="group">
+      <h2>ตารางเมตร</h2>
+      <input id="iM2" type="text" inputmode="decimal" value="0" aria-label="ตารางเมตร">
+    </div>
+
+    <div class="group">
+      <h2>ไร่ แบบทศนิยม <span class="hint">เช่น 2.75 ไร่</span></h2>
+      <input id="iRaiDec" type="text" inputmode="decimal" value="0" aria-label="ไร่แบบทศนิยม">
+    </div>
+
+    <div class="chips">
+      <div class="chip"><b id="cWa">0</b><span>ตารางวารวม</span></div>
+      <div class="chip"><b id="cNgan">0</b><span>งานรวม</span></div>
+      <div class="chip"><b id="cHa">0</b><span>เฮกตาร์</span></div>
+      <div class="chip"><b id="cAcre">0</b><span>เอเคอร์</span></div>
+    </div>
+
+    <button class="reset" id="resetBtn">ล้างค่าทั้งหมด</button>
+  </section>
+
+  <!-- ============ หน้า 2: บวกลบหลายรายการ ============ -->
+  <section class="page" id="pageCalc" role="tabpanel" aria-labelledby="tabCalc" hidden>
+
+    <div class="readout" aria-live="polite">
+      <div class="deed">
+        <div class="minus" id="tSign" hidden>−</div>
+        <div class="cell"><span class="num" id="tRai">0</span><span class="unit">ไร่</span></div>
+        <div class="dash">–</div>
+        <div class="cell"><span class="num" id="tNgan">0</span><span class="unit">งาน</span></div>
+        <div class="dash">–</div>
+        <div class="cell"><span class="num" id="tWa">0</span><span class="unit">ตารางวา</span></div>
+      </div>
+      <div class="m2line"><strong id="tM2">0</strong><span>ตารางเมตร</span></div>
+      <div class="m2line" style="border-top:0;padding-top:4px;margin-top:4px;">
+        <strong id="tRaiDec" style="font-size:1rem;color:var(--ink-soft);">0</strong><span>ไร่ (ทศนิยม)</span>
+      </div>
+      <button class="copy" id="copyCalc">คัดลอกรายการและผลรวม</button>
+    </div>
+
+    <div class="group">
+      <h2>รายการที่นำมาคำนวณ <span class="hint">กดปุ่ม + / − เพื่อสลับบวกลบ</span></h2>
+      <div id="rowList"></div>
+      <button class="addbtn" id="addRow">+ เพิ่มรายการ</button>
+    </div>
+
+    <button class="reset" id="resetCalc">ล้างรายการทั้งหมด</button>
+  </section>
+
+  <details>
+    <summary>ตัวคูณที่ใช้</summary>
+    <table>
+      <tr><td>1 ไร่</td><td>4 งาน = 400 ตร.ว. = 1,600 ตร.ม.</td></tr>
+      <tr><td>1 งาน</td><td>100 ตร.ว. = 400 ตร.ม.</td></tr>
+      <tr><td>1 ตารางวา</td><td>4 ตร.ม. (2 × 2 เมตร)</td></tr>
+      <tr><td>1 เฮกตาร์</td><td>6.25 ไร่ = 10,000 ตร.ม.</td></tr>
+      <tr><td>1 เอเคอร์</td><td>≈ 2.529 ไร่ ≈ 4,046.86 ตร.ม.</td></tr>
+    </table>
+    <p class="note">กรอกเกินหน่วยได้ เช่น 850 ตารางวา จะถูกจัดรูปเป็น 2 ไร่ 0 งาน 50 ตารางวา ให้เอง การยืมหน่วยตอนลบทำให้เองทั้งหมด เช่น 1-0-0 ลบ 50 ตารางวา ได้ 0-3-50</p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var M2_RAI = 1600, M2_NGAN = 400, M2_WA = 4;
+
+  /* ---------- ตัวช่วยกลาง ---------- */
+  function parseNum(str){
+    var v = parseFloat(String(str).replace(/,/g,'').trim());
+    return isFinite(v) ? v : 0;
+  }
+  function nonNeg(str){ var v = parseNum(str); return v < 0 ? 0 : v; }
+  function clean(v, d){ d = (d === undefined) ? 6 : d; return parseFloat(v.toFixed(d)); }
+  function grp(v, d){
+    d = (d === undefined) ? 2 : d;
+    return clean(v, d).toLocaleString('en-US', {maximumFractionDigits:d});
+  }
+  function split(total){                       // ตร.ม. -> ไร่ งาน วา (ใช้ค่าสัมบูรณ์)
+    var t = clean(Math.abs(total), 6);
+    var rai = Math.floor(t / M2_RAI); t = clean(t - rai * M2_RAI, 6);
+    var ngan = Math.floor(t / M2_NGAN); t = clean(t - ngan * M2_NGAN, 6);
+    return {rai:rai, ngan:ngan, wa:clean(t / M2_WA, 4), neg:(total < 0)};
+  }
+  function deedText(m2){
+    var p = split(m2);
+    return (p.neg ? '−' : '') + grp(p.rai,0) + ' ไร่ ' + grp(p.ngan,0) + ' งาน ' + grp(p.wa,4) + ' ตารางวา';
+  }
+  function flash(btn, text){
+    var old = btn.textContent;
+    btn.textContent = text; btn.classList.add('done');
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1600);
+  }
+  function copyText(txt, btn){
+    var ok = function(){ flash(btn, 'คัดลอกแล้ว'); };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok, function(){ fallback(txt, ok, btn); });
+    } else { fallback(txt, ok, btn); }
+  }
+  function fallback(txt, cb, btn){
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); cb(); } catch(e){ flash(btn, 'คัดลอกไม่สำเร็จ'); }
+    document.body.removeChild(ta);
+  }
+  function $(id){ return document.getElementById(id); }
+
+  /* ---------- แท็บ ---------- */
+  var tabConv = $('tabConv'), tabCalc = $('tabCalc'),
+      pageConv = $('pageConv'), pageCalc = $('pageCalc');
+  function show(which){
+    var conv = (which === 'conv');
+    tabConv.setAttribute('aria-selected', conv);
+    tabCalc.setAttribute('aria-selected', !conv);
+    pageConv.hidden = !conv; pageCalc.hidden = conv;
+  }
+  tabConv.addEventListener('click', function(){ show('conv'); });
+  tabCalc.addEventListener('click', function(){ show('calc'); });
+
+  /* ================= หน้า 1: แปลงหน่วย ================= */
+  var iRai=$('iRai'), iNgan=$('iNgan'), iWa=$('iWa'), iM2=$('iM2'), iRaiDec=$('iRaiDec');
+  var m2 = 0;
+
+  function renderConv(skip){
+    var p = split(m2);
+    if (skip !== 'rnw'){ iRai.value = p.rai; iNgan.value = p.ngan; iWa.value = p.wa; }
+    if (skip !== 'm2') iM2.value = clean(m2, 4);
+    if (skip !== 'raiDec') iRaiDec.value = clean(m2 / M2_RAI, 6);
+    $('oRai').textContent = grp(p.rai,0);
+    $('oNgan').textContent = grp(p.ngan,0);
+    $('oWa').textContent = grp(p.wa,4);
+    $('oM2').textContent = grp(m2,4);
+    $('cWa').textContent = grp(m2/M2_WA,4);
+    $('cNgan').textContent = grp(m2/M2_NGAN,4);
+    $('cHa').textContent = grp(m2/10000,4);
+    $('cAcre').textContent = grp(m2/4046.8564224,4);
+  }
+  function fromConv(src){
+    if (src === 'rnw') m2 = nonNeg(iRai.value)*M2_RAI + nonNeg(iNgan.value)*M2_NGAN + nonNeg(iWa.value)*M2_WA;
+    else if (src === 'm2') m2 = nonNeg(iM2.value);
+    else m2 = nonNeg(iRaiDec.value) * M2_RAI;
+    renderConv(src);
+  }
+  [[iRai,'rnw'],[iNgan,'rnw'],[iWa,'rnw'],[iM2,'m2'],[iRaiDec,'raiDec']].forEach(function(pair){
+    pair[0].addEventListener('input', function(){ fromConv(pair[1]); });
+    pair[0].addEventListener('focus', function(){ pair[0].select(); });
+    pair[0].addEventListener('blur', function(){ renderConv(); });
+  });
+  $('resetBtn').addEventListener('click', function(){ m2 = 0; renderConv(); iRai.focus(); });
+  $('copyBtn').addEventListener('click', function(){
+    copyText(deedText(m2) + ' = ' + grp(m2,4) + ' ตารางเมตร', $('copyBtn'));
+  });
+  renderConv();
+
+  /* ================= หน้า 2: บวก – ลบ ================= */
+  var list = $('rowList'), seq = 0;
+
+  function rowHTML(id, n){
+    return '' +
+      '<div class="rowtop">' +
+        '<button class="sign" data-act="sign" title="สลับบวก/ลบ">+</button>' +
+        '<input class="lbl" type="text" placeholder="รายการที่ ' + n + ' (ใส่ชื่อแปลง เลขโฉนด ฯลฯ)">' +
+        '<button class="mini" data-act="mode">ตร.ม.</button>' +
+        '<button class="mini del" data-act="del" title="ลบรายการนี้">×</button>' +
+      '</div>' +
+      '<div class="row rowfields fRnw">' +
+        '<div class="f"><label>ไร่</label><input class="vRai" type="text" inputmode="decimal" value="0"></div>' +
+        '<div class="f"><label>งาน</label><input class="vNgan" type="text" inputmode="decimal" value="0"></div>' +
+        '<div class="f"><label>ตารางวา</label><input class="vWa" type="text" inputmode="decimal" value="0"></div>' +
+      '</div>' +
+      '<div class="row rowfields fM2" hidden>' +
+        '<div class="f"><label>ตารางเมตร</label><input class="vM2" type="text" inputmode="decimal" value="0"></div>' +
+      '</div>' +
+      '<div class="roweq">= 0 ตร.ม.</div>';
+  }
+  function addRow(){
+    seq++;
+    var card = document.createElement('div');
+    card.className = 'rowcard';
+    card.dataset.mode = 'rnw';
+    card.dataset.sign = '1';
+    card.innerHTML = rowHTML(seq, list.children.length + 1);
+    list.appendChild(card);
+    recalc();
+    return card;
+  }
+  function rowValue(card){
+    var m;
+    if (card.dataset.mode === 'm2'){
+      m = nonNeg(card.querySelector('.vM2').value);
+    } else {
+      m = nonNeg(card.querySelector('.vRai').value)*M2_RAI +
+          nonNeg(card.querySelector('.vNgan').value)*M2_NGAN +
+          nonNeg(card.querySelector('.vWa').value)*M2_WA;
+    }
+    return m;
+  }
+  function recalc(){
+    var total = 0;
+    Array.prototype.forEach.call(list.children, function(card){
+      var v = rowValue(card);
+      var sign = parseInt(card.dataset.sign, 10);
+      total += sign * v;
+      card.querySelector('.roweq').textContent =
+        (sign < 0 ? '− ' : '+ ') + grp(v,4) + ' ตร.ม.  (' + deedText(v) + ')';
+    });
+    total = clean(total, 6);
+    var p = split(total);
+    $('tSign').hidden = !p.neg;
+    $('tRai').textContent = grp(p.rai,0);
+    $('tNgan').textContent = grp(p.ngan,0);
+    $('tWa').textContent = grp(p.wa,4);
+    $('tM2').textContent = (p.neg ? '−' : '') + grp(Math.abs(total),4);
+    $('tRaiDec').textContent = (p.neg ? '−' : '') + grp(Math.abs(total)/M2_RAI,6);
+    calcTotal = total;
+  }
+  var calcTotal = 0;
+
+  list.addEventListener('input', recalc);
+  list.addEventListener('blur', function(e){
+    // จัดรูปตัวเลขให้เรียบร้อยเมื่อออกจากช่อง
+    if (e.target && e.target.tagName === 'INPUT' && !e.target.classList.contains('lbl')){
+      e.target.value = clean(nonNeg(e.target.value), 4);
+      recalc();
+    }
+  }, true);
+  list.addEventListener('focus', function(e){
+    if (e.target && e.target.tagName === 'INPUT' && !e.target.classList.contains('lbl')) e.target.select();
+  }, true);
+
+  list.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    var card = btn.closest('.rowcard');
+    var act = btn.dataset.act;
+
+    if (act === 'sign'){
+      var neg = card.dataset.sign === '1';
+      card.dataset.sign = neg ? '-1' : '1';
+      btn.textContent = neg ? '−' : '+';
+      btn.classList.toggle('neg', neg);
+      card.classList.toggle('neg', neg);
+      recalc();
+    } else if (act === 'mode'){
+      var toM2 = card.dataset.mode === 'rnw';
+      card.dataset.mode = toM2 ? 'm2' : 'rnw';
+      card.querySelector('.fRnw').hidden = toM2;
+      card.querySelector('.fM2').hidden = !toM2;
+      btn.textContent = toM2 ? 'ไร่-งาน-วา' : 'ตร.ม.';
+      recalc();
+    } else if (act === 'del'){
+      if (list.children.length <= 1){
+        card.querySelectorAll('input').forEach(function(inp){
+          inp.value = inp.classList.contains('lbl') ? '' : '0';
+        });
+      } else {
+        card.remove();
+      }
+      recalc();
+    }
+  });
+
+  $('addRow').addEventListener('click', function(){
+    var card = addRow();
+    card.querySelector('.vRai').focus();
+  });
+
+  $('resetCalc').addEventListener('click', function(){
+    list.innerHTML = ''; seq = 0;
+    addRow(); addRow();
+  });
+
+  $('copyCalc').addEventListener('click', function(){
+    var lines = [];
+    Array.prototype.forEach.call(list.children, function(card, i){
+      var v = rowValue(card);
+      var sign = parseInt(card.dataset.sign, 10);
+      var lbl = card.querySelector('.lbl').value.trim() || ('รายการที่ ' + (i+1));
+      lines.push((sign < 0 ? '− ' : '+ ') + lbl + ' : ' + deedText(v) + ' = ' + grp(v,4) + ' ตร.ม.');
+    });
+    lines.push('———');
+    lines.push('รวม : ' + deedText(calcTotal) + ' = ' + (calcTotal<0?'−':'') + grp(Math.abs(calcTotal),4) + ' ตร.ม.');
+    copyText(lines.join('\n'), $('copyCalc'));
+  });
+
+  addRow(); addRow();
+})();
+</script>
+</body>
+</html>
